@@ -13,19 +13,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 
-# 한글 그래프 설정
-plt.rcParams["font.family"] = "Malgun Gothic"
-plt.rcParams["axes.unicode_minus"] = False
-
 st.set_page_config(
-    page_title="총괄생산계획 대시보드",
+    page_title="Smart Aggregate Planning Dashboard",
     layout="wide"
 )
 
 
-# -----------------------------
-# 입력값 처리 함수
-# -----------------------------
 def parse_demand_input(demand_text: str):
     try:
         values = [int(x.strip()) for x in demand_text.split(",") if x.strip() != ""]
@@ -38,9 +31,6 @@ def parse_demand_input(demand_text: str):
         return None, str(e)
 
 
-# -----------------------------
-# KPI 계산 함수
-# -----------------------------
 def build_kpi_dict(df: pd.DataFrame):
     return {
         "총비용": float(df["Total Cost"].sum()),
@@ -53,9 +43,6 @@ def build_kpi_dict(df: pd.DataFrame):
     }
 
 
-# -----------------------------
-# 전략 1: 수요추종 전략
-# -----------------------------
 def calculate_chase_strategy(
     demand,
     prod_per_worker,
@@ -100,7 +87,7 @@ def calculate_chase_strategy(
             "Beginning Inventory": current_inventory,
             "Ending Inventory": ending_inventory,
             "Total Cost": cost,
-            "Strategy": "수요추종 전략"
+            "Strategy": "Chase Strategy"
         })
 
         current_inventory = ending_inventory
@@ -108,9 +95,6 @@ def calculate_chase_strategy(
     return pd.DataFrame(records)
 
 
-# -----------------------------
-# 전략 2: 평준화 전략
-# -----------------------------
 def calculate_level_strategy(
     demand,
     prod_per_worker,
@@ -155,7 +139,7 @@ def calculate_level_strategy(
             "Beginning Inventory": current_inventory,
             "Ending Inventory": ending_inventory,
             "Total Cost": cost,
-            "Strategy": "평준화 전략"
+            "Strategy": "Level Strategy"
         })
 
         current_inventory = ending_inventory
@@ -163,9 +147,6 @@ def calculate_level_strategy(
     return pd.DataFrame(records)
 
 
-# -----------------------------
-# 자동 해석 함수
-# -----------------------------
 def evaluate_plan(chase_df, level_df):
     chase_kpi = build_kpi_dict(chase_df)
     level_kpi = build_kpi_dict(level_df)
@@ -200,9 +181,6 @@ def evaluate_plan(chase_df, level_df):
     return comments, chase_kpi, level_kpi
 
 
-# -----------------------------
-# 그래프 함수
-# -----------------------------
 def make_line_chart(x, y1, y2, label1, label2, title, xlabel, ylabel):
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.plot(x, y1, marker="o", linewidth=2, label=label1)
@@ -217,12 +195,12 @@ def make_line_chart(x, y1, y2, label1, label2, title, xlabel, ylabel):
 
 def make_demand_production_chart(months, demand, chase_prod, level_prod):
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(months, demand, marker="o", linewidth=2, label="월별 수요")
-    ax.plot(months, chase_prod, marker="s", linewidth=2, label="수요추종 전략 생산량")
-    ax.plot(months, level_prod, marker="^", linewidth=2, label="평준화 전략 생산량")
-    ax.set_title("월별 수요와 생산량 비교", fontsize=13)
-    ax.set_xlabel("월")
-    ax.set_ylabel("수량")
+    ax.plot(months, demand, marker="o", linewidth=2, label="Demand")
+    ax.plot(months, chase_prod, marker="s", linewidth=2, label="Chase Strategy Production")
+    ax.plot(months, level_prod, marker="^", linewidth=2, label="Level Strategy Production")
+    ax.set_title("Demand vs Production", fontsize=13)
+    ax.set_xlabel("Month")
+    ax.set_ylabel("Quantity")
     ax.legend()
     ax.grid(True, alpha=0.3)
     return fig
@@ -230,13 +208,13 @@ def make_demand_production_chart(months, demand, chase_prod, level_prod):
 
 def make_cost_bar_chart(chase_kpi, level_kpi):
     fig, ax = plt.subplots(figsize=(7, 4))
-    strategies = ["수요추종 전략", "평준화 전략"]
+    strategies = ["Chase Strategy", "Level Strategy"]
     costs = [chase_kpi["총비용"], level_kpi["총비용"]]
 
     ax.bar(strategies, costs)
-    ax.set_title("전략별 총비용 비교", fontsize=13)
-    ax.set_xlabel("전략")
-    ax.set_ylabel("총비용")
+    ax.set_title("Total Cost Comparison", fontsize=13)
+    ax.set_xlabel("Strategy")
+    ax.set_ylabel("Total Cost")
     ax.grid(True, axis="y", alpha=0.3)
 
     for i, v in enumerate(costs):
@@ -247,20 +225,17 @@ def make_cost_bar_chart(chase_kpi, level_kpi):
 
 def make_cost_trend_chart(months, chase_cost, level_cost):
     fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(months, chase_cost, marker="o", linewidth=2, label="수요추종 전략 비용")
-    ax.plot(months, level_cost, marker="s", linewidth=2, label="평준화 전략 비용")
-    ax.set_title("월별 비용 변화 비교", fontsize=13)
-    ax.set_xlabel("월")
-    ax.set_ylabel("비용")
+    ax.plot(months, chase_cost, marker="o", linewidth=2, label="Chase Strategy Cost")
+    ax.plot(months, level_cost, marker="s", linewidth=2, label="Level Strategy Cost")
+    ax.set_title("Monthly Cost Trend", fontsize=13)
+    ax.set_xlabel("Month")
+    ax.set_ylabel("Cost")
     ax.legend()
     ax.grid(True, alpha=0.3)
     return fig
 
 
-# -----------------------------
-# 앱 화면
-# -----------------------------
-st.title("원예장비 제조업체 총괄생산계획 의사결정 대시보드")
+st.title("Smart Aggregate Planning Dashboard")
 
 st.write(
     """
@@ -317,9 +292,6 @@ level_df = calculate_level_strategy(
 
 comments, chase_kpi, level_kpi = evaluate_plan(chase_df, level_df)
 
-# -----------------------------
-# KPI 카드
-# -----------------------------
 st.subheader("핵심 KPI 비교")
 
 c1, c2, c3, c4 = st.columns(4)
@@ -334,17 +306,10 @@ c6.metric("평준화 총고용", f"{level_kpi['총고용']:.0f}")
 c7.metric("수요추종 총해고", f"{chase_kpi['총해고']:.0f}")
 c8.metric("평준화 총해고", f"{level_kpi['총해고']:.0f}")
 
-# -----------------------------
-# 자동 판단
-# -----------------------------
 st.subheader("계획 적절성 자동 판단")
-
 for comment in comments:
     st.info(comment)
 
-# -----------------------------
-# 계획표
-# -----------------------------
 st.subheader("전략별 총괄생산계획표")
 
 tab1, tab2 = st.tabs(["수요추종 전략", "평준화 전략"])
@@ -357,9 +322,6 @@ with tab2:
     st.write("평균 수요 수준에 맞추어 인력을 일정하게 유지하는 전략입니다.")
     st.dataframe(level_df, use_container_width=True)
 
-# -----------------------------
-# 대시보드
-# -----------------------------
 st.subheader("시각화 대시보드")
 
 months = chase_df["Month"].tolist()
@@ -367,55 +329,56 @@ months = chase_df["Month"].tolist()
 g1, g2 = st.columns(2)
 
 with g1:
-    fig1 = make_demand_production_chart(
-        months,
-        demand,
-        chase_df["Production"],
-        level_df["Production"]
+    st.pyplot(
+        make_demand_production_chart(
+            months,
+            demand,
+            chase_df["Production"],
+            level_df["Production"]
+        )
     )
-    st.pyplot(fig1)
 
 with g2:
-    fig2 = make_line_chart(
-        months,
-        chase_df["Workers"],
-        level_df["Workers"],
-        "수요추종 전략 인력",
-        "평준화 전략 인력",
-        "월별 인력 변화 비교",
-        "월",
-        "인력 수"
+    st.pyplot(
+        make_line_chart(
+            months,
+            chase_df["Workers"],
+            level_df["Workers"],
+            "Chase Strategy Workers",
+            "Level Strategy Workers",
+            "Workforce Comparison",
+            "Month",
+            "Number of Workers"
+        )
     )
-    st.pyplot(fig2)
 
 g3, g4 = st.columns(2)
 
 with g3:
-    fig3 = make_line_chart(
-        months,
-        chase_df["Ending Inventory"],
-        level_df["Ending Inventory"],
-        "수요추종 전략 재고",
-        "평준화 전략 재고",
-        "월별 재고 수준 비교",
-        "월",
-        "재고량"
+    st.pyplot(
+        make_line_chart(
+            months,
+            chase_df["Ending Inventory"],
+            level_df["Ending Inventory"],
+            "Chase Strategy Inventory",
+            "Level Strategy Inventory",
+            "Inventory Level Comparison",
+            "Month",
+            "Inventory"
+        )
     )
-    st.pyplot(fig3)
 
 with g4:
-    fig4 = make_cost_trend_chart(
-        months,
-        chase_df["Total Cost"],
-        level_df["Total Cost"]
+    st.pyplot(
+        make_cost_trend_chart(
+            months,
+            chase_df["Total Cost"],
+            level_df["Total Cost"]
+        )
     )
-    st.pyplot(fig4)
 
 st.pyplot(make_cost_bar_chart(chase_kpi, level_kpi))
 
-# -----------------------------
-# 결과 다운로드
-# -----------------------------
 st.subheader("결과 다운로드")
 
 combined_df = pd.concat([chase_df, level_df], ignore_index=True)
